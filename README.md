@@ -1,5 +1,55 @@
 # Talon Vowen Bridge
 
+I've put together a reproducible workflow that lets me use Talon + a local
+speech engine for commands while using modern online STT providers for
+dictation.
+
+The setup is:
+
+- Talon + Local Engine: command recognition
+- ElevenLabs, Groq, or Mistral: free-form dictation
+- Vowen: currently bridges the microphone, online STT provider, and desktop
+
+This lets me keep the reliability and low latency of local command recognition
+while using newer online models for dictation. Of the providers I've tested,
+ElevenLabs has given me the best transcription accuracy, with Groq and Mistral
+also available as alternatives.
+
+The dictation side can currently be used without paying anything: Vowen can be
+used for free, and these online providers offer free-tier or free API usage
+within their limits.
+
+The main integration problem was preventing both recognizers from listening at
+the same time. Vowen exposes its recording state through its CLI, so my Talon
+script detects when dictation starts and automatically stops Talon from
+listening. When dictation ends, Talon resumes listening for commands.
+
+So in practice:
+
+```text
+commands → Talon + Local Engine
+dictation → ElevenLabs / Groq / Mistral
+```
+
+I'm making the Talon script and setup reproducible so others can use the same
+workflow.
+
+Vowen is useful here, but it's not fundamentally required. If someone writes a
+Talon script that directly records audio, sends it to an STT API, receives the
+transcription, and inserts the text, Vowen could be removed entirely:
+
+```text
+Talon + Local Engine → commands
+Talon → direct online STT API → dictation
+```
+
+The broader idea is a dual-recognizer architecture: one recognizer optimized
+for commands and another for dictation, with Talon coordinating which one is
+listening. I'm currently using it for Spanish, but the synchronization
+mechanism itself is language-independent.
+
+Project links: [Vowen](https://vowen.ai/), [Vowen documentation](https://docs.vowen.ai/introduction), and [Talon Voice](https://talonvoice.com/).
+
 Small Windows/Talon user module that temporarily suspends Talon's speech
 recognition while Vowen reports that it is recording, then restores the exact
 Talon listening state that existed before the recording began.
@@ -30,6 +80,10 @@ forever.
 
 ## Compatibility and API status
 
+This release was validated with **Vowen 0.53** on Windows. Other Vowen
+versions may work, but the local status contract is not a public SDK and can
+change between releases.
+
 The bridge expects the following locally observed Vowen contract:
 
 ```text
@@ -52,13 +106,48 @@ need to set it.
 
 ## Requirements
 
-- Windows.
-- Talon installed and running.
-- Vowen installed and running with its local status API available.
+- Windows 10 or later on x64.
+- [Talon Voice](https://talonvoice.com/) installed and running with a local
+  command-recognition engine configured.
+- [Vowen 0.53](https://vowen.ai/) installed and running with its local status
+  API available.
+- A microphone that is available to both Talon and Vowen.
+- Internet access and an API key for a cloud transcription provider if you
+  choose online dictation. Local Vowen models do not require an API key.
 - Permission for Talon to control its own speech input.
 
 No third-party Python package is required by the bridge. It uses only Python's
 standard library plus Talon's runtime API.
+
+## Configure a transcription provider
+
+The bridge does not transcribe audio and does not create or store provider
+credentials. Configure transcription inside Vowen first, then install this
+bridge. Choose at least one provider supported by your Vowen version:
+
+| Provider | Official transcription documentation | API-key page |
+| --- | --- | --- |
+| ElevenLabs | [Speech to Text](https://elevenlabs.io/docs/overview/capabilities/speech-to-text) | [ElevenLabs API keys](https://elevenlabs.io/app/developers/api-keys) |
+| Groq | [Speech to Text](https://console.groq.com/docs/speech-to-text) | [Groq API keys](https://console.groq.com/keys) |
+| Mistral | [Audio transcriptions](https://docs.mistral.ai/api/endpoint/audio/transcriptions) | [Mistral console](https://console.mistral.ai/) |
+| Other Vowen provider | [Vowen transcription engines](https://docs.vowen.ai/introduction) | Use that provider's official console |
+
+General setup:
+
+1. Create an account with the provider and generate an API key. Use the
+   provider's free tier or free credits when available; quotas and pricing can
+   change independently of this repository.
+2. In Vowen, select the provider and transcription model, then enter the key
+   in Vowen's own settings.
+3. Make one short Vowen-only dictation to confirm that the provider works
+   before installing the Talon bridge.
+4. Never paste the key into `vowen_talon_bridge.py`, a Talon profile, a log, or
+   a public issue. The key belongs in Vowen's credential storage.
+
+Vowen's documentation lists additional local and cloud transcription engines.
+The exact provider names and free limits are controlled by Vowen and each
+provider, so this bridge only requires that Vowen expose a working
+`recording` status endpoint.
 
 ## Installation
 
@@ -191,7 +280,7 @@ not required for someone who only wants to install and use the bridge.
 ## Possible future alternative: direct Talon integration
 
 Vowen is not a fundamental requirement for this overall workflow. A future
-Talon user script could integrate directly with the ElevenLabs and Grok APIs
+Talon user script could integrate directly with the ElevenLabs and Groq APIs
 and coordinate the required audio, recognition, response, and Talon speech
 state transitions itself.
 
