@@ -50,9 +50,10 @@ mechanism itself is language-independent.
 
 Project links: [Vowen](https://vowen.ai/), [Vowen documentation](https://docs.vowen.ai/introduction), and [Talon Voice](https://talonvoice.com/).
 
-Small Windows/Talon user module that temporarily suspends Talon's speech
-recognition while Vowen reports that it is recording, then restores the exact
-Talon listening state that existed before the recording began.
+Small Talon user module, currently tested on Windows, that temporarily
+suspends Talon's speech recognition while Vowen reports that it is recording,
+then restores the exact Talon listening state that existed before the
+recording began.
 
 This repository intentionally contains only the bridge. It does not contain a
 Talon profile, Dragon configuration, Parrot files, recordings, logs, models,
@@ -84,6 +85,10 @@ This release was validated with **Vowen 0.53** on Windows. Other Vowen
 versions may work, but the local status contract is not a public SDK and can
 change between releases.
 
+[Vowen supports macOS](https://docs.vowen.ai/faq) as well as Windows, but this
+bridge has not been tested on macOS. macOS compatibility should therefore be
+treated as unverified rather than guaranteed.
+
 The bridge expects the following locally observed Vowen contract:
 
 ```text
@@ -106,7 +111,8 @@ need to set it.
 
 ## Requirements
 
-- Windows 10 or later on x64.
+- Windows 10 or later on x64 for the tested setup. Vowen also supports macOS
+  on Apple Silicon and Intel, but this integration has not been tested there.
 - [Talon Voice](https://talonvoice.com/) installed and running with a local
   command-recognition engine configured.
 - [Vowen 0.53](https://vowen.ai/) installed and running with its local status
@@ -118,6 +124,34 @@ need to set it.
 
 No third-party Python package is required by the bridge. It uses only Python's
 standard library plus Talon's runtime API.
+
+## macOS status and likely adaptations
+
+The synchronization logic is probably portable: it uses Talon's
+`actions.speech.enabled()` and a local authenticated HTTP request, rather than
+Windows-only audio or process APIs. The parts most likely to need adaptation
+on macOS are:
+
+1. **Vowen descriptor path.** The current code searches Windows
+   `%APPDATA%`/`%LOCALAPPDATA%` roots. Vowen documents its macOS data directory
+   as `~/Library/Application Support/vowen/`, so the client may need to also
+   check `~/Library/Application Support/vowen/cli/server.json`.
+2. **Talon installation path and command shell.** Talon documents `~/.talon`
+   as its macOS home, so installation should copy the two files into
+   `~/.talon/user` with `cp` or Finder rather than using the PowerShell example
+   below.
+3. **Permissions.** macOS may require microphone, Accessibility, or Input
+   Monitoring permissions for Talon and Vowen. Those permissions must be
+   granted to the applications themselves; this bridge cannot grant them.
+4. **Runtime contract.** A macOS smoke test must confirm that Vowen 0.53
+   exposes the same localhost endpoint, bearer-token descriptor, and boolean
+   `recording` field. If that contract differs, only the discovery/parser
+   layer should need adjustment.
+
+For an initial diagnostic experiment, `VOWEN_TALON_SERVER_FILE` can point to
+the macOS descriptor path before Talon starts. This is not a substitute for a
+real macOS validation because Talon launched from Finder may not inherit a
+shell environment variable.
 
 ## Configure a transcription provider
 
@@ -151,6 +185,8 @@ provider, so this bridge only requires that Vowen expose a working
 
 ## Installation
 
+### Windows
+
 1. Download or clone this repository.
 2. Copy the two integration files into Talon's user directory:
 
@@ -163,6 +199,21 @@ provider, so this bridge only requires that Vowen expose a working
    If your Talon user directory is elsewhere, copy the files there instead.
 3. Reload Talon, or restart Talon.
 4. Start Vowen and make a short recording.
+
+### macOS (unverified)
+
+Talon's documented macOS user directory is `~/.talon/user`:
+
+```bash
+TalonUser="$HOME/.talon/user"
+mkdir -p "$TalonUser"
+cp ./vowen_talon_bridge.py "$TalonUser/"
+cp ./vowen_talon_bridge.talon "$TalonUser/"
+```
+
+Reload Talon, grant any requested macOS permissions, and test a short Vowen
+recording. This procedure is provided as a starting point only; the
+integration still needs a real macOS smoke test.
 
 The module starts automatically on Talon's `ready` event. Repeated reloads are
 handled by a process singleton that stops the previous polling thread before a
