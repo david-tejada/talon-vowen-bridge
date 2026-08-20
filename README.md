@@ -166,6 +166,9 @@ bridge. Choose at least one provider supported by your Vowen version:
 | Mistral | [Audio transcriptions](https://docs.mistral.ai/api/endpoint/audio/transcriptions) | [Mistral console](https://console.mistral.ai/) |
 | Other Vowen provider | [Vowen transcription engines](https://docs.vowen.ai/introduction) | Use that provider's official console |
 
+Also, here’s a useful comparison of the accuracy of various online
+speech-to-text providers: [Artificial Analysis — Speech to Text](https://artificialanalysis.ai/speech-to-text/non-streaming).
+
 General setup:
 
 1. Create an account with the provider and generate an API key. Use the
