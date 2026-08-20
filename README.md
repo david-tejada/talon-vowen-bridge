@@ -235,37 +235,6 @@ Remove-Item Env:VOWEN_TALON_PYTHON
 The test token is synthetic and exists only inside the test process. It must
 never be replaced with a real Vowen token.
 
-## Before publishing
-
-This section is for the person who will upload the repository publicly. It is
-not required for someone who only wants to install and use the bridge.
-
-1. Run the automatic tests:
-
-   ```powershell
-   .\tests\run_tests.ps1
-   ```
-
-   These tests already pass in this release candidate.
-
-2. Look at the files that will be uploaded. The public package should contain
-   only the bridge, its `.talon` settings file, the README, and the tests.
-
-3. Do not upload any of these private runtime files or values:
-   `server.json`, bearer tokens, Talon logs, recordings, screenshots with
-   personal information, profiles, absolute personal paths, or
-   `talon_state.json`.
-
-4. If possible, copy the two bridge files into a separate, empty Talon user
-   directory and reload Talon there. This is a clean-install check; it avoids
-   confusing this bridge with another script in an existing profile.
-
-5. If a real Vowen/Talon recording is tested, write down only the Vowen
-   version and the result. Never publish the computer's path, token, log, or
-   other private details.
-
-6. This repository includes the MIT license in `LICENSE`. Change that file
-   before publishing only if you want to use a different license.
 
 ## Scope limitations
 
