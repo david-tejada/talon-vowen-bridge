@@ -69,8 +69,9 @@ class _FakeModule:
 
 
 class _FakeApp:
-    def __init__(self):
+    def __init__(self, platform="mac"):
         self.notifications = []
+        self.platform = platform
 
     def register(self, *_args, **_kwargs):
         return None

@@ -133,13 +133,18 @@ class _VowenApiClient:
     def _server_file_candidates(self):
         # An override makes offline diagnostics and future Vowen layout
         # changes possible.  Normal operation falls back to the standard
-        # Windows per-user data roots.
+        # per-user data roots for the current platform.
         override = os.environ.get("VOWEN_TALON_SERVER_FILE")
         if override:
             yield Path(override)
 
+        roots = [os.environ.get("APPDATA"), os.environ.get("LOCALAPPDATA")]
+        if app.platform == "mac":
+            # Vowen's documented macOS data directory.
+            roots.append(str(Path.home() / "Library" / "Application Support"))
+
         seen = set()
-        for root in (os.environ.get("APPDATA"), os.environ.get("LOCALAPPDATA")):
+        for root in roots:
             if not root:
                 continue
             candidate = Path(root) / _SERVER_RELATIVE_PATH

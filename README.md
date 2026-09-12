@@ -85,9 +85,10 @@ This release was validated with **Vowen 0.53** on Windows. Other Vowen
 versions may work, but the local status contract is not a public SDK and can
 change between releases.
 
-[Vowen supports macOS](https://docs.vowen.ai/faq) as well as Windows, but this
-bridge has not been tested on macOS. macOS compatibility should therefore be
-treated as unverified rather than guaranteed.
+[Vowen supports macOS](https://docs.vowen.ai/faq) as well as Windows. The
+bridge has since been smoke tested on macOS against Vowen 0.5.8, which
+exposes the same descriptor layout, bearer token and boolean `recording`
+field documented below.
 
 The bridge expects the following locally observed Vowen contract:
 
@@ -125,33 +126,17 @@ need to set it.
 No third-party Python package is required by the bridge. It uses only Python's
 standard library plus Talon's runtime API.
 
-## macOS status and likely adaptations
+## macOS notes
 
-The synchronization logic is probably portable: it uses Talon's
-`actions.speech.enabled()` and a local authenticated HTTP request, rather than
-Windows-only audio or process APIs. The parts most likely to need adaptation
-on macOS are:
+Talon and Vowen each need microphone access, and macOS may also ask for
+Accessibility or Input Monitoring. Grant these to the applications
+themselves; the bridge cannot grant them.
 
-1. **Vowen descriptor path.** The current code searches Windows
-   `%APPDATA%`/`%LOCALAPPDATA%` roots. Vowen documents its macOS data directory
-   as `~/Library/Application Support/vowen/`, so the client may need to also
-   check `~/Library/Application Support/vowen/cli/server.json`.
-2. **Talon installation path and command shell.** Talon documents `~/.talon`
-   as its macOS home, so installation should copy the two files into
-   `~/.talon/user` with `cp` or Finder rather than using the PowerShell example
-   below.
-3. **Permissions.** macOS may require microphone, Accessibility, or Input
-   Monitoring permissions for Talon and Vowen. Those permissions must be
-   granted to the applications themselves; this bridge cannot grant them.
-4. **Runtime contract.** A macOS smoke test must confirm that Vowen 0.53
-   exposes the same localhost endpoint, bearer-token descriptor, and boolean
-   `recording` field. If that contract differs, only the discovery/parser
-   layer should need adjustment.
-
-For an initial diagnostic experiment, `VOWEN_TALON_SERVER_FILE` can point to
-the macOS descriptor path before Talon starts. This is not a substitute for a
-real macOS validation because Talon launched from Finder may not inherit a
-shell environment variable.
+If Vowen keeps its descriptor somewhere other than
+`~/Library/Application Support/vowen/cli/server.json`, point
+`VOWEN_TALON_SERVER_FILE` at the real path. Talon launched from Finder may not
+inherit a shell environment variable, so it has to be set somewhere Talon
+itself will see.
 
 ## Configure a transcription provider
 
@@ -203,7 +188,7 @@ provider, so this bridge only requires that Vowen expose a working
 3. Reload Talon, or restart Talon.
 4. Start Vowen and make a short recording.
 
-### macOS (unverified)
+### macOS
 
 Talon's documented macOS user directory is `~/.talon/user`:
 
@@ -215,8 +200,7 @@ cp ./vowen_talon_bridge.talon "$TalonUser/"
 ```
 
 Reload Talon, grant any requested macOS permissions, and test a short Vowen
-recording. This procedure is provided as a starting point only; the
-integration still needs a real macOS smoke test.
+recording.
 
 The module starts automatically on Talon's `ready` event. Repeated reloads are
 handled by a process singleton that stops the previous polling thread before a
